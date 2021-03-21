@@ -31,6 +31,12 @@ return function(world, entry)
     run = anim8.newAnimation(g("1-8", 2), 0.1),
     jump = anim8.newAnimation(g(1, 3), 0.1),
     fall = anim8.newAnimation(g(1, 4), 0.1),
+    ground = anim8.newAnimation(g(1, 5), 0.1),
+    attack = anim8.newAnimation(g("1-3", 6), 0.1),
+    hit = anim8.newAnimation(g("1-2", 7), 0.1),
+    dead = anim8.newAnimation(g("1-4", 8), 0.1),
+    enter = anim8.newAnimation(g("1-8", 9), 0.1),
+    exit = anim8.newAnimation(g("1-8", 10), 0.1),
   }
   local anim = anims.idle
 
@@ -47,6 +53,8 @@ return function(world, entry)
     anims = anims,
     anim = anim,
     dir = 1,
+    groundtimeout = 0,
+    attacktimeout = 0,
   }
 
   function player:update(dt)
@@ -54,38 +62,54 @@ return function(world, entry)
 
     local dx, dy = player.body:getLinearVelocity()
 
-    if input:down("left") then
-      dx = -64
-    elseif input:down("right") then
-      dx = 64
-    else
+    if player.attacktimeout > 0 then
       dx = 0
-      if not player.jumping and (input:released("left") or input:released("right")) then
-        player.anim = player.anims.idle
+      dy = 0
+      player.attacktimeout = player.attacktimeout - dt
+    else
+      if player.attacktimeout > -0.3 then
+        player.attacktimeout = player.attacktimeout - dt
       end
-    end
 
-    if input:pressed("left") then
-      player.dir = -1
-      if not player.jumping then
-        player.anim = player.anims.run
+      if input:down("left") then
+        dx = -64
+        player.dir = -1
+      elseif input:down("right") then
+        dx = 64
+        player.dir = 1
+      else
+        dx = 0
       end
-    elseif input:pressed("right") then
-      player.dir = 1
-      if not player.jumping then
-        player.anim = player.anims.run
-      end
-    end
 
-    if player.jumping then
-      if dy < 0 then
-        player.anim = player.anims.jump
-      elseif dy > 0 then
-        player.anim = player.anims.fall
+      if player.jumping then
+        if dy < 0 then
+          player.anim = player.anims.jump
+        elseif dy > 0 then
+          player.anim = player.anims.fall
+        end
+      else
+        if input:down("jump") then
+          dy = -150
+          player.jumping = true
+        end
+        if player.groundtimeout <= 0 then
+          if dx > 0 then
+            player.anim = player.anims.run
+          elseif dx < 0 then
+            player.anim = player.anims.run
+          else
+            player.anim = player.anims.idle
+          end
+        else
+          player.groundtimeout = player.groundtimeout - dt
+        end
       end
-    elseif input:down("jump") then
-      dy = -150
-      player.jumping = true
+
+      if player.attacktimeout <= -0.3 and input:down("attack") then
+        player.attacktimeout = 0.25
+        player.anim = player.anims.attack
+        player.anim:gotoFrame(1)
+      end
     end
 
     player.body:setLinearVelocity(dx, dy)

@@ -50,14 +50,8 @@ function postSolve(a, b, coll, normalimpulse, tangentimpulse)
 
     if nx == 0 and ny == -1 then
       player.jumping = false
-
-      local dx, dy = player.body:getLinearVelocity()
-      
-      if math.abs(dx) < 0.1 then
-        player.anim = player.anims.idle
-      else
-        player.anim = player.anims.run
-      end
+      player.anim = player.anims.ground
+      player.groundtimeout = 0.2
     end
   end
 end
