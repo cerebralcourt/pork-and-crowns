@@ -11,7 +11,7 @@ local input = baton.new {
   joystick = love.joystick.getJoysticks()[1],
 }
 
-return function(world, entry)
+return function(world, entry, exit)
   local width = 26
   local height = 26
   local spritewidth = 78
@@ -24,7 +24,7 @@ return function(world, entry)
   local fixture = love.physics.newFixture(body, shape)
   fixture:setFriction(0)
 
-  local image = love.graphics.newImage("assets/sprites/king-human.png")
+  local image = love.graphics.newImage("assets/sprites/king-hammer.png")
   local g = anim8.newGrid(spritewidth, spriteheight, image:getWidth(), image:getHeight())
   local anims = {
     idle = anim8.newAnimation(g("1-11", 1), 0.1),
@@ -32,15 +32,29 @@ return function(world, entry)
     jump = anim8.newAnimation(g(1, 3), 0.1),
     fall = anim8.newAnimation(g(1, 4), 0.1),
     ground = anim8.newAnimation(g(1, 5), 0.1),
-    attack = anim8.newAnimation(g("1-3", 6), 0.1),
+    attack = anim8.newAnimation(g("1-3", 6), 0.1,
+      function()
+        player.anim:pauseAtEnd()
+        player.attacking = false
+        player.anim:resume()
+        player.attacktimeout = 0.5
+      end),
     hit = anim8.newAnimation(g("1-2", 7), 0.1),
     dead = anim8.newAnimation(g("1-4", 8), 0.1),
-    enter = anim8.newAnimation(g("1-8", 9), 0.1),
-    exit = anim8.newAnimation(g("1-8", 10), 0.1),
+    exit = anim8.newAnimation(g("1-8", 9), 0.1,
+      function()
+        -- change screen
+        player.anim:pauseAtEnd()
+      end),
+    enter = anim8.newAnimation(g("1-8", 10), 0.1,
+      function()
+        player.anim:pauseAtEnd()
+        player.entering = false
+      end),
   }
-  local anim = anims.idle
+  local anim = anims.enter
 
-  local player = {
+  player = {
     width = width,
     height = height,
     spritewidth = spritewidth,
@@ -54,65 +68,85 @@ return function(world, entry)
     anim = anim,
     dir = 1,
     groundtimeout = 0,
-    attacktimeout = 0,
+    attacktimeout = 0.5,
+    attacking = false,
+    entering = true,
   }
 
   function player:update(dt)
     input:update()
 
-    local dx, dy = self.body:getLinearVelocity()
+    if not self.entering then
+      local dx, dy = self.body:getLinearVelocity()
 
-    if self.attacktimeout > 0 then
-      dx = 0
-      dy = 0
-      self.attacktimeout = self.attacktimeout - dt
-    else
-      if self.attacktimeout > -0.3 then
-        self.attacktimeout = self.attacktimeout - dt
-      end
-
-      if input:down("left") then
-        dx = -64
-        self.dir = -1
-      elseif input:down("right") then
-        dx = 64
-        self.dir = 1
-      else
+      if self.attacking then
         dx = 0
-      end
-
-      if self.jumping then
-        if dy < 0 then
-          self.anim = self.anims.jump
-        elseif dy > 0 then
-          self.anim = self.anims.fall
-        end
+        dy = 0
       else
-        if input:down("jump") then
-          dy = -150
-          self.jumping = true
+        if input:down("left") then
+          dx = -64
+          self.dir = -1
+        elseif input:down("right") then
+          dx = 64
+          self.dir = 1
+        else
+          dx = 0
         end
-        if self.groundtimeout <= 0 then
-          if dx > 0 then
-            self.anim = self.anims.run
-          elseif dx < 0 then
-            self.anim = self.anims.run
-          else
-            self.anim = self.anims.idle
+
+        if self.jumping then
+          if dy < 0 then
+            self.anim = self.anims.jump
+          elseif dy > 0 then
+            self.anim = self.anims.fall
           end
         else
-          self.groundtimeout = self.groundtimeout - dt
+          if input:down("jump") then
+            dy = -150
+            self.jumping = true
+          end
+          if self.groundtimeout <= 0 then
+            if dx > 0 then
+              self.anim = self.anims.run
+            elseif dx < 0 then
+              self.anim = self.anims.run
+            else
+              self.anim = self.anims.idle
+            end
+          else
+            self.groundtimeout = self.groundtimeout - dt
+          end
+        end
+
+        if self.attacktimeout > 0 then
+          self.attacktimeout = self.attacktimeout - dt
+        end
+
+        if input:down("attack") then
+          local x = self.body:getX()
+          local y = self.body:getY()
+
+          if x - self.width / 2 > exit.x - exit.width / 2
+          and y - self.height / 2 > exit.y - exit.height / 2
+          and x + self.width / 2 < exit.x + exit.width
+          and y + self.height / 2 < exit.y + exit.height
+          then
+            self.entering = true
+            self.anim = self.anims.exit
+            local x = exit.x + exit.width / 2 - width / 2
+            local y = exit.y + exit.height - height / 2
+            self.body:setPosition(x, y)
+            dx = 0
+            dy = 0
+          elseif self.attacktimeout <= 0 then
+            self.attacking = true
+            self.anim = self.anims.attack
+            self.anim:gotoFrame(1)
+          end
         end
       end
 
-      if self.attacktimeout <= -0.3 and input:down("attack") then
-        self.attacktimeout = 0.25
-        self.anim = self.anims.attack
-        self.anim:gotoFrame(1)
-      end
+      self.body:setLinearVelocity(dx, dy)
     end
-
-    self.body:setLinearVelocity(dx, dy)
 
     self.anim:update(dt)
   end

@@ -1,6 +1,6 @@
-# Kings and Pigs
+# Pork and Crowns
 
-An action platformer that involves kings and pigs.
+An action platformer that involves pork and crowns.
 
 ## Credit
 
