@@ -22,7 +22,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup name="Objects" visible="0">
+ <objectgroup name="Objects">
   <object id="22" name="Entry" x="40" y="72" width="46" height="56"/>
   <object id="24" name="Exit" x="360" y="72" width="46" height="56"/>
   <object id="27" name="Pig" type="inside_crate" x="272" y="144" width="16" height="16"/>
@@ -34,7 +34,7 @@
   <object id="37" name="Crate" type="2" x="320" y="96" width="16" height="16"/>
   <object id="38" name="Crate" type="1" x="432" y="112" width="16" height="16"/>
  </objectgroup>
- <objectgroup name="Collisions" visible="0">
+ <objectgroup name="Collisions">
   <object id="44" x="0" y="64" width="32" height="64"/>
   <object id="45" x="32" y="128" width="64" height="32"/>
   <object id="46" x="96" y="160" width="192" height="32"/>

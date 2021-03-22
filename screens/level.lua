@@ -1,17 +1,20 @@
-local cartographer = require "../lib.cartographer"
-local anim8 = require "../lib.anim8"
-local Player = require "../player"
+local cartographer = require "lib.cartographer"
+local anim8 = require "lib.anim8"
+local Player = require "player"
+local Pig = require "entities.pig"
 
-local tilemap,
+local world,
+      tilemap,
       entry,
       exit,
+      entities,
       player,
       doorimage,
       entryanim,
       exitanim,
       nextFrame
 
-local function createFixture(world, col)
+local function createFixture(col)
   local x = col.x
   local y = col.y
 
@@ -90,7 +93,8 @@ end
 return function(name)
   local screen = {}
 
-  function screen:init(world, screens, changeScreen)
+  function screen:init(screens, changeScreen)
+    world = love.physics.newWorld(0, 9.81 * 32)
   	tilemap = cartographer.load("levels/" .. name .. ".lua")
 
     local function objects(name)
@@ -99,13 +103,26 @@ return function(name)
 
     entry = objects("Entry")[1]
     exit = objects("Exit")[1]
+    entities = {}
+
+    for i, obj in ipairs(objects("Pig")) do
+      table.insert(entities, Pig(world, obj))
+    end
+
+    -- for i, obj in ipairs(objects("Crate")) do
+    --   table.insert(entities, Crate(world, obj))
+    -- end
+
+    -- for i, obj in ipairs(objects("Bomb")) do
+    --   table.insert(entities, Bomb(world, obj))
+    -- end
 
     for i, col in ipairs(tilemap.layers.Collisions.objects) do
-      createFixture(world, col)
+      createFixture(col)
     end
 
     for i, col in ipairs(tilemap.layers.Sensors.objects) do
-      local fixture = createFixture(world, col)
+      local fixture = createFixture(col)
       fixture:setSensor(true)
       fixture:setCategory(col.type or 1)
     end
@@ -114,7 +131,7 @@ return function(name)
 
     doorimage = love.graphics.newImage("assets/sprites/door.png")
     local doorg = anim8.newGrid(46, 56, doorimage:getWidth(), doorimage:getHeight())
-    exitanim = anim8.newAnimation(doorg("1-3", 1), { 0.1, 0.1, 0.6 },
+    exitanim = anim8.newAnimation(doorg("1-5", 1), { 0.1, 0.1, 0.1, 0.1, 0.4 },
       function()
         exitanim:pauseAtEnd()
         changeScreen(screens.levels[1][1])
@@ -130,10 +147,15 @@ return function(name)
       nextFrame = nil
     end
 
+    world:update(dt)
     tilemap:update(dt)
 
     if entryanim then
       entryanim:update(dt)
+    end
+
+    for i, entity in ipairs(entities) do
+      entity:update(dt)
     end
 
     player:update(dt)
@@ -154,7 +176,15 @@ return function(name)
       exitanim:draw(doorimage, exit.x, exit.y)
     end
 
+    for i, entity in ipairs(entities) do
+      entity:draw()
+    end
+
     player:draw()
+  end
+
+  function screen:clean()
+    world:destroy()
   end
 
   function screen:getX()

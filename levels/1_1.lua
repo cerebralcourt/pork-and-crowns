@@ -110,7 +110,7 @@ return {
     {
       type = "objectgroup",
       name = "Objects",
-      visible = false,
+      visible = true,
       opacity = 1,
       offsetx = 0,
       offsety = 0,
@@ -252,7 +252,7 @@ return {
     {
       type = "objectgroup",
       name = "Collisions",
-      visible = false,
+      visible = true,
       opacity = 1,
       offsetx = 0,
       offsety = 0,

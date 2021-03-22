@@ -23,6 +23,7 @@ return function(world, entry, exit)
   local shape = love.physics.newRectangleShape(width, height)
   local fixture = love.physics.newFixture(body, shape)
   fixture:setFriction(0)
+  fixture:setCategory(16)
 
   local image = love.graphics.newImage("assets/sprites/king-hammer.png")
   local g = anim8.newGrid(spritewidth, spriteheight, image:getWidth(), image:getHeight())
@@ -62,13 +63,13 @@ return function(world, entry, exit)
     body = body,
     shape = shape,
     fixture = fixture,
-    jumping = false,
     image = image,
     anims = anims,
     anim = anim,
     dir = 1,
     groundtimeout = 0,
     attacktimeout = 0.5,
+    jumping = false,
     attacking = false,
     entering = true,
   }

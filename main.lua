@@ -8,10 +8,9 @@ math.randomseed(os.time())
 local world, cam, music, screens, screen
 
 function changeScreen(nextScreen)
-  world:destroy()
-  world = love.physics.newWorld(0, 9.81 * 32)
+  screen:clean()
   screen = nextScreen
-  screen:init(world, screens, changeScreen)
+  screen:init(screens, changeScreen)
 end
 
 function love.load()
@@ -20,7 +19,6 @@ function love.load()
   love.graphics.setDefaultFilter("nearest", "nearest")
   love.graphics.setLineWidth(3)
 
-  world = love.physics.newWorld(0, 9.81 * 32)
   cam = Camera(32 * 8, 32 * 6, { resizable = true, maintainAspectRatio = true })
   music = Music()
   screens = {
@@ -31,12 +29,11 @@ function love.load()
     },
   }
   screen = screens.levels[1][1]
-  screen:init(world, screens, changeScreen)
+  screen:init(screens, changeScreen)
 end
 
 function love.update(dt)
   music:update(dt)
-  world:update(dt)
   screen:update(dt)
 
   cam.translationX = screen:getX()
