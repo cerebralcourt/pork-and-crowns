@@ -28,6 +28,8 @@ return function(world, player, obj)
       attack = anim8.newAnimation(g("1-5", 6), 0.1,
         function()
           pig.attacking = false
+          pig.attack:destroy()
+          pig.attack = nil
         end),
       hit = anim8.newAnimation(g("1-2", 7), 0.1),
       dead = anim8.newAnimation(g("1-4", 8), 0.1),
@@ -37,6 +39,7 @@ return function(world, player, obj)
   local anim = anims.normal.idle
 
   pig = {
+    lives = 2,
     width = width,
     height = height,
     spritewidth = spritewidth,
@@ -50,13 +53,15 @@ return function(world, player, obj)
     anim = anim,
     dir = -1,
     attacking = false,
+    attack = nil,
   }
 
   function pig:update(dt)
+    local x, y = self.body:getX(), self.body:getY()
     local dx, dy = self.body:getLinearVelocity()
   	local pdx, pdy = player.body:getLinearVelocity()
-  	local xdist = player.body:getX() - self.body:getX()
-  	local ydist = player.body:getY() - self.body:getY()
+  	local xdist = player.body:getX() - x
+  	local ydist = player.body:getY() - y
 
   	if self.type == "normal" and not self.attacking then
       if math.abs(xdist) < 24 and math.abs(ydist) < 10 then
@@ -65,8 +70,20 @@ return function(world, player, obj)
         self.attacking = true
         dx = 0
         dy = 0
-  	  elseif math.abs(pdy) < 0.1 and math.abs(xdist) < 128 and math.abs(ydist) < 10 then
-        if self.anim ~= self.anims.normal.run then self.anim:gotoFrame(1) end
+
+        if xdist < 0 then
+          self.dir = -1
+        else
+          self.dir = 1
+        end
+
+        local body = love.physics.newBody(world, x + 4 * self.dir, y, "static")
+        local shape = love.physics.newRectangleShape(16, 16)
+        local fixture = love.physics.newFixture(body, shape)
+        fixture:setSensor(true)
+        fixture:setCategory(15)
+        self.attack = fixture
+  	  elseif math.abs(xdist) < 128 and math.abs(ydist) < 10 then
   	  	self.anim = self.anims.normal.run
         if xdist < 0 then
           self.dir = -1
@@ -75,7 +92,6 @@ return function(world, player, obj)
         end
         dx = self.dir * 50
   	  else
-        if self.anim ~= self.anims.normal.idle then self.anim:gotoFrame(1) end
         self.anim = self.anims.normal.idle
         dx = 0
       end

@@ -63,10 +63,24 @@ local function beginContact(a, b, coll)
       local y2 = fixture:getBody():getY()
 
       if y1 < y2 then
-        nextFrame = function() fixture:setSensor(false) end
+        if fixture:isSensor() then
+          nextFrame = function() fixture:setSensor(false) end
+        end
       else
         fixture:setSensor(true)
       end
+    elseif fixture:getCategory() == 15 then
+      local x1 = player.body:getX()
+      local x2 = fixture:getBody():getX()
+
+      local nx
+      if x1 < x2 then
+        nx = -1
+      else
+        nx = 1
+      end
+
+      player:hit(nx)
     end
   end
 end
@@ -80,12 +94,22 @@ local function preSolve(a, b, coll)
 end
 
 local function postSolve(a, b, coll, normalimpulse, tangentimpulse)
-  if player.jumping and (player.fixture == a or player.fixture == b) then
-    local nx, ny = coll:getNormal()
+  local fixture = nil
+  local x1, y1, x2, y2
+  if player.fixture == a then
+    fixture = b
+  elseif player.fixture == b then
+    fixture = a
+  end
 
-    if nx == 0 and ny == -1 and player.anim ~= player.anims.exit then
-      player.jumping = false
-      player.groundtimeout = 0.2
+  if fixture then
+    if player.jumping and (fixture:getCategory() == 1 or fixture:getCategory() == 2) then
+      local nx, ny = coll:getNormal()
+
+      if nx == 0 and ny == -1 and player.anim ~= player.anims.exit then
+        player.jumping = false
+        player.groundtimeout = 0.2
+      end
     end
   end
 end

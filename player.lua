@@ -42,13 +42,14 @@ return function(world, entry, exit)
         player.anim:resume()
         player.attacktimeout = 0.5
       end),
-    hit = anim8.newAnimation(g("1-2", 7), 0.1),
-    dead = anim8.newAnimation(g("1-4", 8), 0.1),
-    exit = anim8.newAnimation(g("1-8", 9), 0.1,
+    hit = anim8.newAnimation(g("1-2", 7), 0.1,
       function()
-        -- change screen
         player.anim:pauseAtEnd()
+        player.damaged = false
+        player.anim:resume()
       end),
+    dead = anim8.newAnimation(g("1-4", 8), 0.1),
+    exit = anim8.newAnimation(g("1-8", 9), 0.1, function() player.anim:pauseAtEnd() end),
     enter = anim8.newAnimation(g("1-8", 10), 0.1,
       function()
         player.anim:pauseAtEnd()
@@ -58,6 +59,7 @@ return function(world, entry, exit)
   local anim = anims.enter
 
   player = {
+    lives = 3,
     width = width,
     height = height,
     spritewidth = spritewidth,
@@ -70,16 +72,17 @@ return function(world, entry, exit)
     anim = anim,
     dir = 1,
     groundtimeout = 0,
-    attacktimeout = 0.5,
+    attacktimeout = 0,
     jumping = false,
     attacking = false,
     entering = true,
+    damaged = false,
   }
 
   function player:update(dt)
     input:update()
 
-    if not self.entering then
+    if not self.entering and not self.damaged then
       local dx, dy = self.body:getLinearVelocity()
 
       if self.attacking then
@@ -93,7 +96,7 @@ return function(world, entry, exit)
           dx = 64
           self.dir = 1
         else
-          dx = 0
+          dx = self.dir / 1000
         end
 
         if self.jumping then
@@ -108,14 +111,11 @@ return function(world, entry, exit)
             self.jumping = true
           end
           if self.groundtimeout <= 0 then
-            if dx > 0 then
-              if self.anim ~= self.anims.run then self.anim:gotoFrame(1) end
+            if dx > 0.001 then
               self.anim = self.anims.run
-            elseif dx < 0 then
-              if self.anim ~= self.anims.run then self.anim:gotoFrame(1) end
+            elseif dx < -0.001 then
               self.anim = self.anims.run
             else
-              if self.anim ~= self.anims.idle then self.anim:gotoFrame(1) end
               self.anim = self.anims.idle
             end
           elseif not self.attacking then
@@ -167,6 +167,17 @@ return function(world, entry, exit)
     end
 
     self.anim:draw(self.image, x, y, 0, self.dir, 1)
+  end
+
+  function player:hit(nx)
+    if not self.damaged then
+      self.damaged = true
+      self.body:setLinearVelocity(nx * 100, -50)
+      self.anim = self.anims.hit
+      self.anim:gotoFrame(1)
+      self.attacking = false
+      self.lives = self.lives - 1
+    end
   end
 
   return player
