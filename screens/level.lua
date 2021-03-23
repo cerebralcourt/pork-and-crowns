@@ -82,6 +82,37 @@ local function beginContact(a, b, coll)
 
       player:hit(nx)
     end
+  else
+    local entity = nil
+    local fixture = nil
+
+    for i, e in ipairs(entities) do
+      if e.fixture == a then
+        entity = e
+        fixture = b
+      elseif e.fixture == b then
+        entity = e
+        fixture = a
+      end
+    end
+
+    if entity then
+      if entity:label() == "Pig" then
+        if fixture:getCategory() == 16 then
+          local x1 = entity.body:getX()
+          local x2 = fixture:getBody():getX()
+
+          local nx
+          if x1 < x2 then
+            nx = -1
+          else
+            nx = 1
+          end
+
+          entity:hit(nx)
+        end
+      end
+    end
   end
 end
 
@@ -142,7 +173,7 @@ return function(name)
     player = Player(world, entry, exit)
 
     for i, obj in ipairs(objects("Pig")) do
-      table.insert(entities, Pig(world, player, obj))
+      table.insert(entities, Pig(world, player, obj, entities))
     end
 
     -- for i, obj in ipairs(objects("Crate")) do
@@ -209,6 +240,7 @@ return function(name)
 
   function screen:clean()
     world:destroy()
+    entities = {}
   end
 
   function screen:getX()

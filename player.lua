@@ -77,6 +77,7 @@ return function(world, entry, exit)
     attacking = false,
     entering = true,
     damaged = false,
+    attack = nil,
   }
 
   function player:update(dt)
@@ -89,6 +90,11 @@ return function(world, entry, exit)
         dx = 0
         dy = 0
       else
+        if self.attack then
+          self.attack:destroy()
+          self.attack = nil
+        end
+
         if input:down("left") then
           dx = -64
           self.dir = -1
@@ -148,6 +154,14 @@ return function(world, entry, exit)
             self.attacking = true
             self.anim = self.anims.attack
             self.anim:gotoFrame(1)
+
+            local body = love.physics.newBody(world, x + 4 * self.dir, y, "static")
+            local shape = love.physics.newRectangleShape(32, 56)
+            local fixture = love.physics.newFixture(body, shape)
+            fixture:setSensor(true)
+            fixture:setCategory(16)
+            fixture:setMask(1)
+            self.attack = fixture
           end
         end
       end
