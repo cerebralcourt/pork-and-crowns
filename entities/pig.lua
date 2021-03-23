@@ -5,7 +5,7 @@ return function(world, player, obj, entities)
   local width = 16
   local height = 16
   local spritewidth = 34
-  local spriteheight = 28
+  local spriteheight = 30
   local x = obj.x - width / 2
   local y = obj.y - height / 2
 
@@ -18,6 +18,8 @@ return function(world, player, obj, entities)
 
   local image = love.graphics.newImage("assets/sprites/pig.png")
   local g = anim8.newGrid(spritewidth, spriteheight, image:getWidth(), image:getHeight())
+  local crateimage = love.graphics.newImage("assets/sprites/crate.png")
+  local crateg = anim8.newGrid(22, 16, crateimage:getWidth(), crateimage:getHeight())
   local anims = {
     normal = {
       idle = anim8.newAnimation(g("1-11", 1), 0.1),
@@ -42,6 +44,38 @@ return function(world, player, obj, entities)
           pig:kill()
         end),
     },
+    withCrate = {
+      idle = anim8.newAnimation(g("1-9", 9), 0.1),
+      run = anim8.newAnimation(g("1-6", 10), 0.1),
+      pickup = anim8.newAnimation(g("1-5", 11), 0.1),
+      throw = anim8.newAnimation(g("1-5", 12), 0.1),
+    },
+    withBomb = {
+      idle = anim8.newAnimation(g("1-10", 13), 0.1),
+      run = anim8.newAnimation(g("1-6", 14), 0.1),
+      pickup = anim8.newAnimation(g("1-4", 15), 0.1),
+      throw = anim8.newAnimation(g("1-5", 16), 0.1),
+    },
+    crate = {
+      idle = anim8.newAnimation(crateg(1, 1), 0.1),
+    },
+    insideCrate = {
+      peek = anim8.newAnimation(g("1-3", 17), { 0.1, 0.1, 0.4 },
+        function()
+          pig.anim = pig.anims.crate.idle
+          pig.crate = true
+          pig.peektimeout = 5
+        end),
+      prepare = anim8.newAnimation(g("1-2", 18), 0.1),
+      jump = anim8.newAnimation(g("1-2", 19), 0.1),
+      fall = anim8.newAnimation(g(1, 20), 0.1),
+      ground = anim8.newAnimation(g(1, 21), 0.1),
+    },
+    match = {
+      idle = anim8.newAnimation(g("1-3", 22), 0.1),
+      light = anim8.newAnimation(g("1-3", 23), 0.1),
+      cannon = anim8.newAnimation(g("1-3", 24), 0.1),
+    },
   }
   local type_ = obj.type
   local anim = anims.normal.idle
@@ -64,6 +98,9 @@ return function(world, player, obj, entities)
     attacking = false,
     damaged = false,
     attack = nil,
+    crateimage = crateimage,
+    crate = false,
+    peektimeout = 5,
   }
 
   function pig:update(dt)
@@ -119,7 +156,16 @@ return function(world, player, obj, entities)
             self.anim = self.anims.normal.idle
             dx = 0.001
           end
-      	end
+      	elseif self.type == "insideCrate" then
+          if self.peektimeout > 0 then
+            self.peektimeout = self.peektimeout - dt
+            self.anim = self.anims.crate.idle
+            self.crate = true
+          else
+            self.anim = self.anims.insideCrate.peek
+            self.crate = false
+          end
+        end
 
         self.body:setLinearVelocity(dx, dy)
       end
@@ -134,14 +180,21 @@ return function(world, player, obj, entities)
   end
 
   function pig:draw()
-  	local x = self.body:getX() - self.width / 2 + 5
-    local y = self.body:getY() - self.height / 2 + 5
+  	if self.crate then
+      local x = self.body:getX() + 4
+      local y = self.body:getY() + 9
 
-    if self.dir == 1 then
-      x = x + self.spritewidth + 5
+      self.anim:draw(self.crateimage, x, y, 0, 1, 1)
+    else
+      local x = self.body:getX() - self.width / 2 + 5
+      local y = self.body:getY() - self.height / 2 + 3
+
+      if self.dir == 1 then
+        x = x + self.spritewidth + 5
+      end
+
+      self.anim:draw(self.image, x, y, 0, -self.dir, 1)
     end
-
-  	self.anim:draw(self.image, x, y, 0, -self.dir, 1)
   end
 
   function pig:label()
@@ -149,6 +202,10 @@ return function(world, player, obj, entities)
   end
 
   function pig:hit(nx)
+    if self.attack then
+      self.attack:destroy()
+      self.attack = nil
+    end
     if not self.damaged then
       self.damaged = true
       self.attacking = false
@@ -165,11 +222,6 @@ return function(world, player, obj, entities)
   end
 
   function pig:kill()
-    if self.attack then
-      self.attack:destroy()
-      self.attack = nil
-    end
-
     for i, entity in ipairs(entities) do
       if self == entity then
         table.remove(entities, i)

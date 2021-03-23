@@ -146,7 +146,7 @@ return {
         {
           id = 27,
           name = "Pig",
-          type = "inside_crate",
+          type = "insideCrate",
           shape = "rectangle",
           x = 272,
           y = 144,

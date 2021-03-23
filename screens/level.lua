@@ -103,7 +103,18 @@ local function beginContact(a, b, coll)
 
     if entity then
       if entity:label() == "Pig" then
-        if fixture:getCategory() == 16 then
+        if fixture:getCategory() == 2 then
+          local y1 = entity.body:getY()
+          local y2 = fixture:getBody():getY()
+
+          if y1 < y2 then
+            if fixture:isSensor() then
+              nextFrame = function() fixture:setSensor(false) end
+            end
+          else
+            fixture:setSensor(true)
+          end
+        elseif fixture:getCategory() == 16 then
           local x1 = entity.body:getX()
           local x2 = fixture:getBody():getX()
 

@@ -25,7 +25,7 @@
  <objectgroup name="Objects">
   <object id="22" name="Entry" x="40" y="72" width="46" height="56"/>
   <object id="24" name="Exit" x="360" y="72" width="46" height="56"/>
-  <object id="27" name="Pig" type="inside_crate" x="272" y="144" width="16" height="16"/>
+  <object id="27" name="Pig" type="insideCrate" x="272" y="144" width="16" height="16"/>
   <object id="29" name="Pig" type="normal" x="296" y="80" width="16" height="16"/>
   <object id="30" name="Bomb" x="168" y="80" width="16" height="16"/>
   <object id="31" name="Pig" type="normal" x="200" y="80" width="16" height="16"/>
