@@ -13,7 +13,7 @@ local input = baton.new {
   joystick = love.joystick.getJoysticks()[1],
 }
 
-return function(world, entry, exit)
+return function(world, entry, exit, livebar)
   local width = 26
   local height = 26
   local spritewidth = 78
@@ -47,7 +47,7 @@ return function(world, entry, exit)
         player.anim:pauseAtEnd()
         player.damaged = false
         player.anim:resume()
-        if player.lives == 0 then
+        if player.livebar:isdead() then
           player.anim = player.anims.dead
           player.dead = true
         end
@@ -67,7 +67,6 @@ return function(world, entry, exit)
   local anim = anims.enter
 
   player = {
-    lives = 3,
     width = width,
     height = height,
     spritewidth = spritewidth,
@@ -79,6 +78,7 @@ return function(world, entry, exit)
     anims = anims,
     anim = anim,
     dir = 1,
+    livebar = livebar,
     groundtimeout = 0,
     attacktimeout = 0,
     jumping = false,
@@ -201,10 +201,10 @@ return function(world, entry, exit)
     if not self.damaged and not self.dead then
       self.damaged = true
       self.attacking = false
-      self.lives = self.lives - 1
       self.body:setLinearVelocity(nx * 100, -50)
       self.anim = self.anims.hit
       self.anim:gotoFrame(1)
+      self.livebar:hit()
     end
   end
 

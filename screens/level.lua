@@ -85,7 +85,6 @@ local function beginContact(a, b, coll)
       end
 
       player:hit(nx)
-      livebar:hit()
     end
   else
     local entity = nil
@@ -187,8 +186,8 @@ return function(name)
       fixture:setCategory(col.type or 1)
     end
 
-    player = Player(world, entry, exit)
     livebar = Livebar()
+    player = Player(world, entry, exit, livebar)
 
     for i, obj in ipairs(objects("Pig")) do
       table.insert(entities, Pig(world, player, obj, entities))

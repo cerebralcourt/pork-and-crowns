@@ -60,16 +60,21 @@ return function(world, player, obj, entities)
       idle = anim8.newAnimation(crateg(1, 1), 0.1),
     },
     insideCrate = {
-      peek = anim8.newAnimation(g("1-3", 17), { 0.1, 0.1, 0.4 },
+      peek = anim8.newAnimation(g("1-3", 17), { 0.1, 0.1, 0.75 },
         function()
           pig.anim = pig.anims.crate.idle
           pig.crate = true
           pig.peektimeout = 5
         end),
-      prepare = anim8.newAnimation(g("1-2", 18), 0.1),
-      jump = anim8.newAnimation(g("1-2", 19), 0.1),
+      prepare = anim8.newAnimation(g("1-2", 18), 0.1, function() pig.startJump = true end),
+      jump = anim8.newAnimation(g("1-2", 19), 0.1,
+        function()
+          pig.anim = pig.anims.insideCrate.fall
+          pig.falling = true
+          pig.jumping = false
+        end),
       fall = anim8.newAnimation(g(1, 20), 0.1),
-      ground = anim8.newAnimation(g(1, 21), 0.1),
+      ground = anim8.newAnimation(g(1, 21), 0.2, function() pig.falling = false end),
     },
     match = {
       idle = anim8.newAnimation(g("1-3", 22), 0.1),
@@ -96,6 +101,9 @@ return function(world, player, obj, entities)
     dir = -1,
     attacktimeout = 0,
     attacking = false,
+    jumping = false,
+    startJump = false,
+    falling = false,
     damaged = false,
     attack = nil,
     crateimage = crateimage,
@@ -157,6 +165,59 @@ return function(world, player, obj, entities)
             dx = 0.001
           end
       	elseif self.type == "insideCrate" then
+          if self.startJump then
+            self.anim = self.anims.insideCrate.jump
+            self.anim:pause()
+            self.anim:gotoFrame(1)
+            dx = xdist
+            dy = -200
+            self.startJump = false
+            self.jumping = true
+          elseif self.jumping then
+            if dy > 0.1 then
+              self.anim:resume()
+            end
+          elseif self.falling then
+            if math.abs(dy) < 1 then
+              self.anim = self.anims.insideCrate.ground
+            end
+          elseif math.abs(xdist) < 96 and math.abs(ydist) < 100 and math.abs(dy) < 0.1 then
+            self.anim = self.anims.insideCrate.prepare
+            self.crate = false
+            self.peektimeout = 5
+          elseif self.peektimeout > 0 then
+            self.peektimeout = self.peektimeout - dt
+            self.anim = self.anims.crate.idle
+            self.crate = true
+            dx = 0
+          else
+            self.anim = self.anims.insideCrate.peek
+            self.crate = false
+            dx = 0
+          end
+        end
+
+        if self.attack then
+          self.attack:getBody():setLinearVelocity(dx, dy)
+        else
+          local body = love.physics.newBody(world, x, y, "dynamic")
+          local shape = love.physics.newRectangleShape(self.width, self.height)
+          local fixture = love.physics.newFixture(body, shape)
+          body:setLinearVelocity(dx, dy)
+          fixture:setSensor(true)
+          fixture:setCategory(15)
+          self.attack = fixture
+        end
+
+        self.body:setLinearVelocity(dx, dy)
+      end
+    else
+      if not self.attacking then
+        if self.type == "normal" then
+          self.anim = self.anims.normal.idle
+          local dx, dy = self.body:getLinearVelocity()
+          self.body:setLinearVelocity(0, dy)
+        elseif self.type == "insideCrate" then
           if self.peektimeout > 0 then
             self.peektimeout = self.peektimeout - dt
             self.anim = self.anims.crate.idle
@@ -166,13 +227,6 @@ return function(world, player, obj, entities)
             self.crate = false
           end
         end
-
-        self.body:setLinearVelocity(dx, dy)
-      end
-    else
-      if not self.attacking then
-        self.anim = self.anims.normal.idle
-        self.body:setLinearVelocity(0, 0)
       end
     end
 
@@ -207,17 +261,28 @@ return function(world, player, obj, entities)
       self.attack = nil
     end
     if not self.damaged then
-      self.damaged = true
-      self.attacking = false
-      self.lives = self.lives - 1
-      if self.lives > 0 then
+      if self.type == "normal" then
+        self.attacking = false
+        self.lives = self.lives - 1
+        self.damaged = true
+        if self.lives > 0 then
+          self.anim = self.anims.normal.hit
+          self.body:setLinearVelocity(nx * 200, -50)
+        else
+          self.anim = self.anims.normal.dead
+          self.body:setLinearVelocity(nx * 100, -75)
+        end
+        self.anim:gotoFrame(1)
+      elseif self.type == "insideCrate" then
+        self.type = "normal"
         self.anim = self.anims.normal.hit
-        self.body:setLinearVelocity(nx * 200, -50)
-      else
-        self.anim = self.anims.normal.dead
-        self.body:setLinearVelocity(nx * 100, -75)
+        self.damaged = true
+        self.jumping = false
+        self.startJump = false
+        self.falling = false
+        self.crate = false
+        self.body:setLinearVelocity(nx * 150, -50)
       end
-      self.anim:gotoFrame(1)
     end
   end
 

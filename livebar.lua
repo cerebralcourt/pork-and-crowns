@@ -90,5 +90,9 @@ return function()
     end
   end
 
+  function livebar:isdead()
+    return self.lives == 0
+  end
+
   return livebar
 end
